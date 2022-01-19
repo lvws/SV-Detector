@@ -1,0 +1,4 @@
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/build/CMakeFiles/edit_cache.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/build/CMakeFiles/rebuild_cache.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/build/CMakeFiles/makeIndex.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/build/CMakeFiles/readfasta_library.dir

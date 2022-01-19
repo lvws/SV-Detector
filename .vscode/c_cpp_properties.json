@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/include",
+                "/dssg02/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/include"
+            ],
+            "defines": [],
+            "compilerPath": "/dssg/home/lvws/programs/miniconda3/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
