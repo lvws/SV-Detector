@@ -117,17 +117,43 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named test-index
+# Target rules for targets named sv-detector
 
 # Build rule for target.
-test-index: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test-index
-.PHONY : test-index
+sv-detector: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sv-detector
+.PHONY : sv-detector
 
 # fast build rule for target.
-test-index/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/build
-.PHONY : test-index/fast
+sv-detector/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/build
+.PHONY : sv-detector/fast
+
+#=============================================================================
+# Target rules for targets named fusion_library
+
+# Build rule for target.
+fusion_library: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fusion_library
+.PHONY : fusion_library
+
+# fast build rule for target.
+fusion_library/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/build
+.PHONY : fusion_library/fast
+
+#=============================================================================
+# Target rules for targets named bamread_library
+
+# Build rule for target.
+bamread_library: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 bamread_library
+.PHONY : bamread_library
+
+# fast build rule for target.
+bamread_library/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/build
+.PHONY : bamread_library/fast
 
 #=============================================================================
 # Target rules for targets named readfasta_library
@@ -143,34 +169,64 @@ readfasta_library/fast:
 .PHONY : readfasta_library/fast
 
 # target to build an object file
-reference.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/reference.o
-.PHONY : reference.o
+src/BamReader.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/src/BamReader.o
+.PHONY : src/BamReader.o
 
 # target to preprocess a source file
-reference.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/reference.i
-.PHONY : reference.i
+src/BamReader.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/src/BamReader.i
+.PHONY : src/BamReader.i
 
 # target to generate assembly for a file
-reference.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/reference.s
-.PHONY : reference.s
+src/BamReader.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/src/BamReader.s
+.PHONY : src/BamReader.s
 
 # target to build an object file
-test-index.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/test-index.o
-.PHONY : test-index.o
+src/fusion.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/src/fusion.o
+.PHONY : src/fusion.o
 
 # target to preprocess a source file
-test-index.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/test-index.i
-.PHONY : test-index.i
+src/fusion.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/src/fusion.i
+.PHONY : src/fusion.i
 
 # target to generate assembly for a file
-test-index.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/test-index.s
-.PHONY : test-index.s
+src/fusion.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/src/fusion.s
+.PHONY : src/fusion.s
+
+# target to build an object file
+src/main.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/src/main.o
+.PHONY : src/main.o
+
+# target to preprocess a source file
+src/main.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/src/main.i
+.PHONY : src/main.i
+
+# target to generate assembly for a file
+src/main.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/src/main.s
+.PHONY : src/main.s
+
+# target to build an object file
+src/reference.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/src/reference.o
+.PHONY : src/reference.o
+
+# target to preprocess a source file
+src/reference.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/src/reference.i
+.PHONY : src/reference.i
+
+# target to generate assembly for a file
+src/reference.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/src/reference.s
+.PHONY : src/reference.s
 
 # Help Target
 help:
@@ -180,14 +236,22 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... bamread_library"
+	@echo "... fusion_library"
 	@echo "... readfasta_library"
-	@echo "... test-index"
-	@echo "... reference.o"
-	@echo "... reference.i"
-	@echo "... reference.s"
-	@echo "... test-index.o"
-	@echo "... test-index.i"
-	@echo "... test-index.s"
+	@echo "... sv-detector"
+	@echo "... src/BamReader.o"
+	@echo "... src/BamReader.i"
+	@echo "... src/BamReader.s"
+	@echo "... src/fusion.o"
+	@echo "... src/fusion.i"
+	@echo "... src/fusion.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
+	@echo "... src/reference.o"
+	@echo "... src/reference.i"
+	@echo "... src/reference.s"
 .PHONY : help
 
 

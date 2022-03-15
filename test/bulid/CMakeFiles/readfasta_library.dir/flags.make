@@ -4,7 +4,7 @@
 # compile CXX with /dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++
 CXX_DEFINES = -Dreadfasta_library_EXPORTS
 
-CXX_INCLUDES = -I/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/include
+CXX_INCLUDES = -I/dssg02/home/lvws/programs/htslib/include -I/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/include
 
-CXX_FLAGS = -fPIC
+CXX_FLAGS = -fPIC   -Wall -g
 

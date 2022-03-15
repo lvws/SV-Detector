@@ -43,6 +43,8 @@ set(CMAKE_MAKEFILE_PRODUCTS
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
-  "CMakeFiles/test-index.dir/DependInfo.cmake"
+  "CMakeFiles/sv-detector.dir/DependInfo.cmake"
+  "CMakeFiles/fusion_library.dir/DependInfo.cmake"
+  "CMakeFiles/bamread_library.dir/DependInfo.cmake"
   "CMakeFiles/readfasta_library.dir/DependInfo.cmake"
   )

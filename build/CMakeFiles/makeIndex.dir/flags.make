@@ -6,5 +6,5 @@ CXX_DEFINES =
 
 CXX_INCLUDES = -I/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/include
 
-CXX_FLAGS = 
+CXX_FLAGS =   -Wall -g
 

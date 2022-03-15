@@ -1,6 +1,12 @@
 {
     "files.associations": {
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "array": "cpp",
+        "initializer_list": "cpp",
+        "unordered_map": "cpp",
+        "functional": "cpp",
+        "fstream": "cpp",
+        "iostream": "cpp"
     },
     "cmake.configureOnOpen": true
 }

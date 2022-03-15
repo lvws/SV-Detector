@@ -69,28 +69,28 @@ include CMakeFiles/readfasta_library.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/readfasta_library.dir/flags.make
 
-CMakeFiles/readfasta_library.dir/reference.o: CMakeFiles/readfasta_library.dir/flags.make
-CMakeFiles/readfasta_library.dir/reference.o: ../reference.cpp
-CMakeFiles/readfasta_library.dir/reference.o: CMakeFiles/readfasta_library.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/readfasta_library.dir/reference.o"
-	/dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/readfasta_library.dir/reference.o -MF CMakeFiles/readfasta_library.dir/reference.o.d -o CMakeFiles/readfasta_library.dir/reference.o -c /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/reference.cpp
+CMakeFiles/readfasta_library.dir/src/reference.o: CMakeFiles/readfasta_library.dir/flags.make
+CMakeFiles/readfasta_library.dir/src/reference.o: ../src/reference.cpp
+CMakeFiles/readfasta_library.dir/src/reference.o: CMakeFiles/readfasta_library.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/readfasta_library.dir/src/reference.o"
+	/dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/readfasta_library.dir/src/reference.o -MF CMakeFiles/readfasta_library.dir/src/reference.o.d -o CMakeFiles/readfasta_library.dir/src/reference.o -c /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/src/reference.cpp
 
-CMakeFiles/readfasta_library.dir/reference.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/readfasta_library.dir/reference.i"
-	/dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/reference.cpp > CMakeFiles/readfasta_library.dir/reference.i
+CMakeFiles/readfasta_library.dir/src/reference.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/readfasta_library.dir/src/reference.i"
+	/dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/src/reference.cpp > CMakeFiles/readfasta_library.dir/src/reference.i
 
-CMakeFiles/readfasta_library.dir/reference.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/readfasta_library.dir/reference.s"
-	/dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/reference.cpp -o CMakeFiles/readfasta_library.dir/reference.s
+CMakeFiles/readfasta_library.dir/src/reference.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/readfasta_library.dir/src/reference.s"
+	/dssg/home/lvws/programs/miniconda3/envs/conda_gcc_env/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/src/reference.cpp -o CMakeFiles/readfasta_library.dir/src/reference.s
 
 # Object files for target readfasta_library
 readfasta_library_OBJECTS = \
-"CMakeFiles/readfasta_library.dir/reference.o"
+"CMakeFiles/readfasta_library.dir/src/reference.o"
 
 # External object files for target readfasta_library
 readfasta_library_EXTERNAL_OBJECTS =
 
-libreadfasta_library.so: CMakeFiles/readfasta_library.dir/reference.o
+libreadfasta_library.so: CMakeFiles/readfasta_library.dir/src/reference.o
 libreadfasta_library.so: CMakeFiles/readfasta_library.dir/build.make
 libreadfasta_library.so: CMakeFiles/readfasta_library.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX shared library libreadfasta_library.so"

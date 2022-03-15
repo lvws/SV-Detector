@@ -63,7 +63,9 @@ CMAKE_BINARY_DIR = /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bu
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/test-index.dir/all
+all: CMakeFiles/sv-detector.dir/all
+all: CMakeFiles/fusion_library.dir/all
+all: CMakeFiles/bamread_library.dir/all
 all: CMakeFiles/readfasta_library.dir/all
 .PHONY : all
 
@@ -72,35 +74,91 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/test-index.dir/clean
+clean: CMakeFiles/sv-detector.dir/clean
+clean: CMakeFiles/fusion_library.dir/clean
+clean: CMakeFiles/bamread_library.dir/clean
 clean: CMakeFiles/readfasta_library.dir/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/test-index.dir
+# Target rules for target CMakeFiles/sv-detector.dir
 
 # All Build rule for target.
-CMakeFiles/test-index.dir/all: CMakeFiles/readfasta_library.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=3,4 "Built target test-index"
-.PHONY : CMakeFiles/test-index.dir/all
+CMakeFiles/sv-detector.dir/all: CMakeFiles/fusion_library.dir/all
+CMakeFiles/sv-detector.dir/all: CMakeFiles/bamread_library.dir/all
+CMakeFiles/sv-detector.dir/all: CMakeFiles/readfasta_library.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=7,8 "Built target sv-detector"
+.PHONY : CMakeFiles/sv-detector.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/test-index.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 4
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test-index.dir/all
+CMakeFiles/sv-detector.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 8
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/sv-detector.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 0
-.PHONY : CMakeFiles/test-index.dir/rule
+.PHONY : CMakeFiles/sv-detector.dir/rule
 
 # Convenience name for target.
-test-index: CMakeFiles/test-index.dir/rule
-.PHONY : test-index
+sv-detector: CMakeFiles/sv-detector.dir/rule
+.PHONY : sv-detector
 
 # clean rule for target.
-CMakeFiles/test-index.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test-index.dir/build.make CMakeFiles/test-index.dir/clean
-.PHONY : CMakeFiles/test-index.dir/clean
+CMakeFiles/sv-detector.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sv-detector.dir/build.make CMakeFiles/sv-detector.dir/clean
+.PHONY : CMakeFiles/sv-detector.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/fusion_library.dir
+
+# All Build rule for target.
+CMakeFiles/fusion_library.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=3,4 "Built target fusion_library"
+.PHONY : CMakeFiles/fusion_library.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/fusion_library.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/fusion_library.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 0
+.PHONY : CMakeFiles/fusion_library.dir/rule
+
+# Convenience name for target.
+fusion_library: CMakeFiles/fusion_library.dir/rule
+.PHONY : fusion_library
+
+# clean rule for target.
+CMakeFiles/fusion_library.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/fusion_library.dir/build.make CMakeFiles/fusion_library.dir/clean
+.PHONY : CMakeFiles/fusion_library.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/bamread_library.dir
+
+# All Build rule for target.
+CMakeFiles/bamread_library.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=1,2 "Built target bamread_library"
+.PHONY : CMakeFiles/bamread_library.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/bamread_library.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/bamread_library.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles 0
+.PHONY : CMakeFiles/bamread_library.dir/rule
+
+# Convenience name for target.
+bamread_library: CMakeFiles/bamread_library.dir/rule
+.PHONY : bamread_library
+
+# clean rule for target.
+CMakeFiles/bamread_library.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/bamread_library.dir/build.make CMakeFiles/bamread_library.dir/clean
+.PHONY : CMakeFiles/bamread_library.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/readfasta_library.dir
@@ -109,7 +167,7 @@ CMakeFiles/test-index.dir/clean:
 CMakeFiles/readfasta_library.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/readfasta_library.dir/build.make CMakeFiles/readfasta_library.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=1,2 "Built target readfasta_library"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=5,6 "Built target readfasta_library"
 .PHONY : CMakeFiles/readfasta_library.dir/all
 
 # Build rule for subdir invocation for target.

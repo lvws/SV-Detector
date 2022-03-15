@@ -2,6 +2,9 @@
 # Create a library
 ############################################################
 
+#增加调试信息
+add_definitions("-Wall -g")
+
 include_directories("/dssg02/home/lvws/programs/miniconda3/envs/conda_gcc_env//include")
 #Generate the shared library from the library sources
 add_library(readfasta_library SHARED 

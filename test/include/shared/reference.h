@@ -32,8 +32,8 @@ public:
     ChunkParse fetch(string chrom,int start,int end);
 private:
     ifstream fasta;
-    map<string,vector<int>> index_dic;
-    map<string,vector<int>> static get_index(string& fasta_name);
+    map<string,vector<unsigned>> index_dic;
+    map<string,vector<unsigned>> static get_index(string& fasta_name);
 };
 
 vector<string> split (string s, string delimiter);

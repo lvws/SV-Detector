@@ -6,5 +6,5 @@ CXX_DEFINES = -Dreadfasta_library_EXPORTS
 
 CXX_INCLUDES = -I/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/include
 
-CXX_FLAGS = -fPIC
+CXX_FLAGS = -fPIC   -Wall -g
 

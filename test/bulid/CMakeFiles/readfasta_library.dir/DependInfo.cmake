@@ -8,7 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/reference.cpp" "CMakeFiles/readfasta_library.dir/reference.o" "gcc" "CMakeFiles/readfasta_library.dir/reference.o.d"
+  "/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/src/reference.cpp" "CMakeFiles/readfasta_library.dir/src/reference.o" "gcc" "CMakeFiles/readfasta_library.dir/src/reference.o.d"
   )
 
 # Targets to which this target links.
