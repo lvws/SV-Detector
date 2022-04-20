@@ -65,28 +65,32 @@ void pileup(vector<Piled_reads>& v_ss,string& s,string& m,string& qname,string& 
 }
 
 //寻找cigar 中 S 的 长度，以及， soft-clip 在下游时，断点距离比对起点的偏移量(MND)。
-pair<int,int> getCigarInfo(string& cigar){
-    int sn = 0;
-    int mn = 0;
+//找到reads 中的可变剪切的位点
+altSplit getCigarInfo(string& cigar){
+    altSplit asp;
     int a = 0;
     char c ;
+
     stringstream ss{cigar};
     while(ss >> a >>c){
         switch (c)
         {
         case 'S':
-            sn = a;
+            asp.slen = a;
             break;
         case 'M':
-        case 'N':
         case 'D':
-            mn += a;
+            asp.offset += a;
+            break;
+        case 'N':
+            asp.altsp.push_back(make_pair(asp.offset,asp.offset+a));
+            asp.offset += a;
             break;
         default:
             break;
         }
     }
-    return make_pair(sn,mn);
+    return asp;
 }
 
 
@@ -99,29 +103,38 @@ pair<int,int> getCigarInfo(string& cigar){
 //@qname: read 的名字；
 //@map_split_read: 记录每个断点堆叠信息的映射表；
 //@return:  检查read 是否含soft-clip , 是返回 true ,若满足soft-clip 长度大于等于12 则进一步堆叠信息； 
-bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,mps& map_split_read){
+bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,mps& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript ){
     smatch m;
     string split_read,match_seq;
     bool down = false;
+    auto asp = getCigarInfo(cigar);
+
+// 找可变剪切
+    cout << "可变剪切： " << chrom << ":" << pos << "\t" << cigar<<"\t";
+    for (auto as : asp.altsp){
+        string p1 = chrom + ':' + to_string(as.first + pos);
+        string p2 = chrom + ':' + to_string(as.second + pos);
+        cout << p1 << "-" << p2 << "; ";
+        if (map_transcript.find(p1) != map_transcript.end() && map_transcript.find(p2) != map_transcript.end()){
+            map_alt_split[map_transcript[p1] + '-' + map_transcript[p2]].push_back(qname);
+        }
+    }
+    cout << "\n";
+
     if(cigar[cigar.size()-1] == 'S'){
-        if(!isdigit(cigar[cigar.size()-3])) return false;
+        // if(!isdigit(cigar[cigar.size()-3])) return false;
         down = true;
-        pair<int,int> rs = getCigarInfo(cigar);
         // cout << "Treat Cigar: " << cigar << "\tsoft: " << rs.first << "\toffset: " <<  rs.second << "\n";
-        pos += rs.second ;
-        int n = rs.first;
+        pos += asp.offset ;
+        int n = asp.slen;
         if(n<12) return false;
         split_read = seq.substr(seq.size()-n,n);
         if (seq.size()-10 < n) match_seq = seq.substr(0,seq.size()-n);
         else match_seq = seq.substr(seq.size()-n-10,10);
         
     } else {
-        stringstream ss{cigar};
-        int n;
-        char c;
-        ss >> n >> c;
-        if (c == 'S'){
-            if(n<12) return false;
+        int n = asp.slen;
+        if (n >= 12 ){
             split_read = seq.substr(0,n);
             reverse(split_read.begin(),split_read.end());
             pos++;
@@ -144,8 +157,8 @@ bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qn
 void parse_discordant_read(string& qname,int flag,string& rname,int pos,string& nchrom,int npos,string& cigar,unordered_map<string,fusionPos>& map_dcp){
     if(flag & 3328 || map_c2i.find(nchrom) == map_c2i.end()) return;
     auto rs = getCigarInfo(cigar);
-    int pos1 = pos - rs.second;
-    int pos2 = pos + rs.second;
+    int pos1 = pos - rs.offset;
+    int pos2 = pos + rs.offset;
 
     if(map_c2i[rname] < map_c2i[nchrom] || (map_c2i[rname] == map_c2i[nchrom] && pos < npos)){
         map_dcp[qname].p1 = make_pair(rname,pos);

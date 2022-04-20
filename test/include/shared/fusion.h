@@ -58,7 +58,7 @@ string hanming(const string& s1,const string& s2,int td=2);
 //处理split-read, 对一断点的soft-clip seq 进行堆叠；
 //该function 会修改 map_split_read 的内容，
 //map_split_read : key 为 chrom<string>:pos<int> ; value 为 Piled_reads 向量。
-bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,unordered_map<string,vector<Piled_reads>>& map_split_read);
+bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript );
 
 //融合断点结构,记录两个断点的位置。
 //自动会把较低的染色体位点记录为p1, 较高的位点记录为p2；
@@ -81,6 +81,20 @@ void parse_discordant_read(string& qname,int flag,string& rname,int pos,string& 
 //@map_dcp:  以discordant read 的 qname 为键，融合断点为值的字典；
 //return map_fus_dcps: 汇总1000bp 范围内的discordant reads ,简化后续计算
 unordered_map<string,vector<string>> combine_discordant_reads(unordered_map<string,fusionPos>& map_dcp);
+
+
+
+
+//记录read 的mapping 情况
+//@slen : 记录soft-clip seq 长度；
+//@offset: 记录偏离长度（主要用于soft-clip 在下游的情况）；
+//@alsp: 记录可变剪切的偏移位点；
+struct altSplit
+{
+    int slen = 0 ,offset = 0;
+    vector<pair<int,int>> altsp;
+};
+
 
 
 //记录融合信息的结构

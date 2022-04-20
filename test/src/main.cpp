@@ -519,7 +519,7 @@ pair<position,int> map_soft_clip_seq(string& break_p1,unordered_map<unsigned int
 //@bam_header bam的头文件；
 //@map_dcp: 散列表用于记录discordant reads;
 //@map_split_read: 散列表用于记录split reads;
-bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string,fusionPos>& map_dcp,unordered_map<string,vector<Piled_reads>>& map_split_read){
+bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string,fusionPos>& map_dcp,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript){
     string qname = getName(aln);
     string chrom = getChrom(aln,bam_header);
     string nchrom = getNchrom(aln,bam_header);
@@ -535,7 +535,7 @@ bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string
 
     if(s_chroms.find(chrom) == s_chroms.end()) return false;
     if(mapQ < 15 || flag & 1024 ) return true;
-    else if(parse_split_read(chrom,pos,seq,cigar,qname,map_split_read)) {
+    else if(parse_split_read(chrom,pos,seq,cigar,qname,map_split_read, map_alt_split,map_transcript)) {
         // cout << "Deal split-reads: " << qname << "\t" << cigar << "\t" << isize << "\t" << chrom << ":" << pos << "\n";
         return true;
     }
@@ -885,10 +885,23 @@ void dna_print_sv(map<string,fusion>& map_fusion){
     }
 }
 
+//获得特定转录本的剪切位点信息
+unordered_map<string,string> getTranscript(string infile){
+    ifstream ifs{infile};
+    unordered_map<string,string> map_transcript;
+    string chrom;
+    int start,end;
+    string extron;
+    while(ifs >> chrom >> start >> end >> extron){
+        map_transcript[chrom + ":" + to_string(start)] = extron;
+        map_transcript[chrom + ":" + to_string(end)] = extron;
+    }
+    return map_transcript;
+}
 
 int main(int argc,char* argv[]){
-    if(argc < 6){
-        cout << argv[0] << "\tbam\treference\t12-kmer-index\trefseq_trans.exon.bed\t0:DNA(1:RNA)\n";
+    if(argc < 7){
+        cout << argv[0] << "\tbam\treference\t12-kmer-index\trefseq_trans.exon.bed\ttranscript-altsplit\t0:DNA(1:RNA)\n";
         return -1;
     }
     
@@ -896,7 +909,8 @@ int main(int argc,char* argv[]){
     string fasta = argv[2];
     string kmerFile = argv[3];
     string extronFile = argv[4];
-    string mode = argv[5];
+    string transFile = argv[5];
+    string mode = argv[6];
     bool rna = false;
     if (mode == "0") rna = false;
     else if(mode == "1") rna = true;
@@ -908,7 +922,7 @@ int main(int argc,char* argv[]){
     map<string,unsigned> map_chrom_offset = make_chrom_offset(fasta);
     fastqReader reference = fastqReader(fasta);
     BamReader brd = BamReader(bamFile);
-
+    unordered_map<string,vector<string>> map_alt_split;
     unordered_map<string,fusionPos> map_dcp;
     unordered_map<string,vector<Piled_reads>> map_split_read;
     map<string,fusion> map_fusion;
@@ -916,11 +930,13 @@ int main(int argc,char* argv[]){
 
     //获得外显子、基因信息
     map<string,vector<string>> m_extron = getExtronInfo(extronFile,mge);
+    // 获得要进行可变剪切检测的相关转录本信息
+    unordered_map<string,string> map_transcript = getTranscript(transFile);
 
     cout << "开始获取融合支持reads ...\n";
     // 寻找要处理的reads
     while(brd.next()){
-        if (!deal_aln(brd.aln,brd.bam_header,map_dcp,map_split_read)) break;       
+        if (!deal_aln(brd.aln,brd.bam_header,map_dcp,map_split_read,map_alt_split,map_transcript)) break;       
     }
     cout << "融合支持reads获取结束！\n";
 
@@ -959,6 +975,11 @@ int main(int argc,char* argv[]){
         << "gene_p1;gene_p2\tsplit_p1:split_p2:discordant reads\tp1_cigars;p2_cigars;total_reads\n"; 
     if(!rna) dna_print_sv(map_fusion);
     else rna_print_sv(map_fusion);
+
+    cerr << "\nAlterNative SplitInfos\n";
+    for(auto& a : map_alt_split){
+        cerr << a.first << "\t" << a.second.size() <<"\n";
+    }
 
 }
 
