@@ -102,25 +102,29 @@ altSplit getCigarInfo(string& cigar){
 //@cigar: read 的cigar值；
 //@qname: read 的名字；
 //@map_split_read: 记录每个断点堆叠信息的映射表；
+//@p_sa: 记录supplementary alignment 的绝对位置和 cigar  (int,cigar ; int为0时跳过)
+//@map_sa: 记录first alignment --> supplementary alignment的映射
 //@return:  检查read 是否含soft-clip , 是返回 true ,若满足soft-clip 长度大于等于12 则进一步堆叠信息； 
-bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,mps& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript ){
+bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,mps& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript,
+pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa ){
     smatch m;
     string split_read,match_seq;
     bool down = false;
     auto asp = getCigarInfo(cigar);
 
 // 找可变剪切
-    cout << "可变剪切： " << chrom << ":" << pos << "\t" << cigar<<"\t";
+    //cout << "可变剪切： " << chrom << ":" << pos << "\t" << cigar<<"\t";
     for (auto as : asp.altsp){
         string p1 = chrom + ':' + to_string(as.first + pos);
         string p2 = chrom + ':' + to_string(as.second + pos);
-        cout << p1 << "-" << p2 << "; ";
+        //cout << p1 << "-" << p2 << "; ";
         if (map_transcript.find(p1) != map_transcript.end() && map_transcript.find(p2) != map_transcript.end()){
             map_alt_split[map_transcript[p1] + '-' + map_transcript[p2]].push_back(qname);
         }
     }
-    cout << "\n";
-
+    //cout << "\n";
+   
+    //处理reads信息
     if(cigar[cigar.size()-1] == 'S'){
         // if(!isdigit(cigar[cigar.size()-3])) return false;
         down = true;
@@ -140,6 +144,17 @@ bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qn
             pos++;
             match_seq = seq.substr(n,10);
         } else return false;
+    }
+
+     //处理SA 信息
+    if(p_sa.first !=0){
+        string f_sa = chrom + ":" + to_string(pos/10);
+        if(p_sa.second.back() == 'S'){
+            auto asp_sa = getCigarInfo(p_sa.second);
+            map_sa[f_sa].push_back(p_sa.first+asp_sa.offset-1);
+        }
+        else map_sa[f_sa].push_back(p_sa.first);
+        //cout << "SA: " << f_sa << ": " << p_sa.first << "\t" << p_sa.second << "\n"; 
     }
     
     string p = chrom + ":" + to_string(pos); 
@@ -287,7 +302,7 @@ void combine_fusion(map<string,fusion>& map_fusion,unordered_map<string,vector<s
                     if( (abs(tmp_p.p1pos.first - sp.p1.second) < dis || abs(tmp_p.p1pos.second - sp.p1.second) < dis ) && (abs(tmp_p.p2pos.first - sp.p2.second) < dis || abs(tmp_p.p2pos.second - sp.p2.second) < dis))
                     {
                         n++;
-                        cout << "\tOK";
+                        //cout << "\tOK";
                         continue;
                     }
                 }
@@ -295,10 +310,10 @@ void combine_fusion(map<string,fusion>& map_fusion,unordered_map<string,vector<s
                     if( (abs(tmp_p.p2pos.first - sp.p1.second) < dis || abs(tmp_p.p2pos.second - sp.p1.second) < dis ) && (abs(tmp_p.p1pos.first - sp.p2.second) < dis || abs(tmp_p.p1pos.second - sp.p2.second) < dis))
                     {
                         n++;
-                        cout <<"\tOK";
+                        //cout <<"\tOK";
                     }
                 }
-                cout << "\n";
+                //cout << "\n";
             }
             fs.second.dcp = n;
         }

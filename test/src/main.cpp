@@ -104,6 +104,16 @@ map<string,unsigned int> make_chrom_offset(const string& fasta){
     return map_chrom_offset;
 }
 
+//将染色体位点转换为绝对位置。
+//@chrom : 染色体号
+//@pos: 位置
+unsigned position2int(string chrom,int pos,map<string,unsigned>& map_chrom_offset){
+    if (map_chrom_offset.find(chrom) == map_chrom_offset.end())
+        return 0;
+    return map_chrom_offset[chrom] + pos;
+}
+
+
 //二分法寻找染色体绝对位置对应的实际染色体号和实际位置
 //@pos: hg19文件碱基绝对位置；
 //@map_chrom_offset: 从hg19 索引文件中得到的，各个染色体的初始偏离值；
@@ -248,11 +258,15 @@ vector<unsigned int> select_kmer(unordered_map<unsigned int,vector<unsigned>>& m
 //@err: 平均多少个kmer,允许一个错误。
 //return: pair数据，记录能找到最靠近断裂点的kmer ; 
 // 其在基因组上的位置，以及在read 上的偏离值（由0开始），连锁分值, 若没能找到连锁，返回值的偏离为 -1，连锁分值0.
-Kmer_Chain global_align(unordered_map<unsigned int,vector<unsigned>>& map_kmer_pos,mop& map_kmer_offset,vector<unsigned int> v_kmer,int err){
+Kmer_Chain global_align(unordered_map<unsigned int,vector<unsigned>>& map_kmer_pos,mop& map_kmer_offset,vector<unsigned int> v_kmer,int err,vector<unsigned> v_sa){
+    vector<Kmer_Chain> results,results2;
     Kmer_Chain result = {0,-1,0};
-    int score = 1; //至少要求2 段kmer 可以连锁；
+    int score = 2; //至少要求2 段kmer 可以连锁；
+    int bias = 50; // supplementary 位点和重新mapping 的位点间允许的偏差；
     cout << "Kmer Chain " << "kemr-vector-len: " << v_kmer.size() << "\n";
-    if(v_kmer.size() < 2) return result;
+    if(v_kmer.size() < 2) {
+        return result;
+    }
     // cout << "Kmer Chain " << "kemr-vector-len: " << v_kmer.size() << "\n";
     for(unsigned int i = 0;i < v_kmer.size()/2 + 1;i++){
         auto kmer = v_kmer[i];
@@ -271,16 +285,45 @@ Kmer_Chain global_align(unordered_map<unsigned int,vector<unsigned>>& map_kmer_p
                 else k++;
                 if (k > e) break;
             }
-            if(m > score) {
+            if(m >= score) {
                 result = {pos,offset,m};
+                results.push_back(result);
                 score = m;
                 cout << "Kmer vector size: " << v_kmer.size() - i
                     << " Kmer Index: "  << i <<" Kmer Offset: " << offset
                     <<" Pos: " << pos << " Score: " << m << "\n";
             }
-            if ( m > (v_kmer.size() - i - 1) && m > 1) return result;
-        }        
+
+            //解除多位点的Mapping , 找到一个最有解就结束
+            //if ( m > (v_kmer.size() - i - 1) && m > 1) break;
+
+        }   
+        if(results.size() != 0){
+            if(results[-1].chainNum > (v_kmer.size() - i - 1) && results[-1].chainNum > 1)
+                break;
+        }     
     }
+
+    //cout << "SA in this Pos:\t";
+    //for(auto i :v_sa) cout << i <<"\t";
+    //cout << "\n";
+
+    vector<Kmer_Chain> v_tmp;
+    for(auto r:results){
+        if(r.chainNum == score){
+            v_tmp.push_back(r);
+            for(auto sa_pos : v_sa){
+                if(sa_pos <= r.pos + bias && sa_pos + bias >= r.pos){
+                    //results2.push_back(r);
+                    return r;
+                }
+            }
+        }
+    }
+
+    if(v_tmp.size() == 1)
+        result = v_tmp[0];
+    else result = {0,-1,0};
     return result;
 
 } 
@@ -375,8 +418,8 @@ void move_breakp(string& break_p1,int n){
 position break_point_get(string& break_p1,Kmer_Chain chain,fastqReader& reference,const string& soft_clip_seq,string& match_seq,map<string,unsigned>& map_chrom_offset,vector<string>& v_chroms,int map_state){
     int error_hanming = 3;
     position chrom_pos = int2position(chain.pos,map_chrom_offset,v_chroms,0,v_chroms.size()-1);
-    // cout << "Get Pos From: " << chain.pos << " To: " << chrom_pos.first <<":" << chrom_pos.second << "\t"
-        // << match_seq << "\t" << soft_clip_seq <<"\n";
+    cout << "Get Pos From: " << chain.pos << " To: " << chrom_pos.first <<":" << chrom_pos.second << "\t"
+         << match_seq << "\t" << soft_clip_seq <<"\n";
     int mlen = (int)match_seq.size();
     if (map_state == 0 || map_state == 3){
         string query_seq = soft_clip_seq.substr(0,chain.offset);
@@ -457,13 +500,17 @@ position break_point_get(string& break_p1,Kmer_Chain chain,fastqReader& referenc
 //@rna: rna 序列的比对和DNA 有区别；
 //return : 断裂位点，pair的第二位数， 第一位记录  -1: 没有找到位点；0: 下游正链；1：下游负链；2:上游正链；3:上游负链
 //soft seq处于下游时，头部完全匹配另外的位置，往前还可以找到的mapping bases, 此时修改 break_p1值；
-pair<position,int> map_soft_clip_seq(string& break_p1,unordered_map<unsigned int,vector<unsigned>>& map_kmer_pos,fastqReader& reference,string& soft_clip_seq,string& match_seq,map<string,unsigned>& map_chrom_offset,vector<string>& v_chroms,bool isdown,bool rna)
+pair<position,int> map_soft_clip_seq(string& break_p1,unordered_map<unsigned int,vector<unsigned>>& map_kmer_pos,
+fastqReader& reference,string& soft_clip_seq,string& match_seq,map<string,unsigned>& map_chrom_offset,
+vector<string>& v_chroms,map<string,vector<unsigned>>& map_sa ,bool isdown,bool rna)
 {
     if(rna) {
         if(soft_clip_seq.size() > 48) soft_clip_seq = soft_clip_seq.substr(0,48);
     }
     pair<position,int> result = make_pair(make_pair("0",0),-1); 
-    if(soft_clip_seq.size() < 18) return result; 
+    if(soft_clip_seq.size() < 18) {
+        return result;
+    } 
     if(!isdown) reverse(soft_clip_seq.begin(),soft_clip_seq.end()); // soft-clip seq 在上游的read ,在pilup 时用反向的read，所以要转换回来。  
     mop map_kmer_offset_forward = extract_kmer(soft_clip_seq,12);
     vector<unsigned int> v_kmer_forward = select_kmer(map_kmer_pos,map_kmer_offset_forward,10000);
@@ -474,33 +521,49 @@ pair<position,int> map_soft_clip_seq(string& break_p1,unordered_map<unsigned int
 
     int error_golbal = 3;
 
+    //获得可能的supplementary 位点,半径10bp范围；
+    vector<unsigned> v_sa;
+    vector<string> v_break_p1 = split(break_p1,":");
+    int break_p1_pos = string2number<int>(v_break_p1[1]);
+    string sa_pos1 = v_break_p1[0] + ":" + to_string(break_p1_pos/10 - 1);
+    string sa_pos2 = v_break_p1[0] + ":" + to_string(break_p1_pos/10 );
+    string sa_pos3 = v_break_p1[0] + ":" + to_string(break_p1_pos/10 + 1);
+    vector<string> sa_poses = {sa_pos1,sa_pos2,sa_pos3};
+    for(auto pos : sa_poses){
+        if (map_sa.find(pos) != map_sa.end()){
+            for(auto i:map_sa[pos]) v_sa.push_back(i);
+        }
+    }
+
+
     if(isdown){
         // 下游正链匹配
-        Kmer_Chain pos_global_forward = global_align(map_kmer_pos,map_kmer_offset_forward,v_kmer_forward,error_golbal) ;
+        Kmer_Chain pos_global_forward = global_align(map_kmer_pos,map_kmer_offset_forward,v_kmer_forward,error_golbal,v_sa) ;
         // 下游负链匹配
         reverse(v_kmer_reverse.begin(),v_kmer_reverse.end());
-        Kmer_Chain pos_global_reverse = global_align(map_kmer_pos,map_kmer_offset_reverse,v_kmer_reverse,error_golbal);
+        Kmer_Chain pos_global_reverse = global_align(map_kmer_pos,map_kmer_offset_reverse,v_kmer_reverse,error_golbal,v_sa);
         // cout << "down! \n";
-        if(pos_global_forward.chainNum >= pos_global_reverse.chainNum && pos_global_forward.chainNum >=2 ){            
+        if(pos_global_forward.chainNum >= pos_global_reverse.chainNum && pos_global_forward.chainNum >=2 ){   
             result.first = break_point_get(break_p1,pos_global_forward,reference,soft_clip_seq,match_seq,map_chrom_offset,v_chroms,0);
-            result.second = 0;
+            result.second = 0;            
         } else if(pos_global_reverse.chainNum >=2)
         {
-            result.first = break_point_get(break_p1,pos_global_reverse,reference,soft_clip_seq_rp,match_seq,map_chrom_offset,v_chroms,1);
-            result.second = 1;            
-        }  
+            result.first = break_point_get(break_p1,pos_global_reverse ,reference,soft_clip_seq_rp,match_seq,map_chrom_offset,v_chroms,1);
+            result.second = 1;                        
+        } 
+
         // cout << "Mapping Finsh!\n";     
     } else {
         reverse(v_kmer_forward.begin(),v_kmer_forward.end());
-        Kmer_Chain pos_global_forward = global_align(map_kmer_pos,map_kmer_offset_forward,v_kmer_forward,error_golbal);
-        Kmer_Chain pos_global_reverse = global_align(map_kmer_pos,map_kmer_offset_reverse,v_kmer_reverse,error_golbal);
+        Kmer_Chain pos_global_forward = global_align(map_kmer_pos,map_kmer_offset_forward,v_kmer_forward,error_golbal,v_sa);
+        Kmer_Chain pos_global_reverse = global_align(map_kmer_pos,map_kmer_offset_reverse,v_kmer_reverse,error_golbal,v_sa);
 
         // cout << "Mapping Finsh!\n";
         if(pos_global_forward.chainNum >= pos_global_reverse.chainNum && pos_global_forward.chainNum >=2){
             result.first = break_point_get(break_p1,pos_global_forward,reference,soft_clip_seq,match_seq,map_chrom_offset,v_chroms,2);
-            result.second = 2;
+            result.second = 2;             
         }else if(pos_global_reverse.chainNum >= 2){
-            result.first = break_point_get(break_p1,pos_global_reverse,reference,soft_clip_seq_rp,match_seq,map_chrom_offset,v_chroms,3) ;
+            result.first = break_point_get(break_p1,pos_global_reverse,reference,soft_clip_seq_rp,match_seq,map_chrom_offset,v_chroms,3);
             result.second = 3;
         }
     }
@@ -515,11 +578,14 @@ pair<position,int> map_soft_clip_seq(string& break_p1,unordered_map<unsigned int
 //处理含soft-clip 的reads 或 insert size 大于 1000 的reads , mapQ 大于等于 15
 //该function 会修改 map_dcp 和 map_split_read 这两个表记录了符合对应条件的reads 信息。
 //记录每条序列的气势位点和insertSize;
+//得到supplementary alignment 位置（ 以防多位点匹配时遗漏，SA:Z:7,55863708,-,78M73S,255,0;）
 //@aln bam 的比对记录；
 //@bam_header bam的头文件；
 //@map_dcp: 散列表用于记录discordant reads;
 //@map_split_read: 散列表用于记录split reads;
-bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string,fusionPos>& map_dcp,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript){
+//@map_sa: 记录first alignment --> supplementary alignment的映射
+bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string,fusionPos>& map_dcp,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript,
+map<string,unsigned>& map_chrom_offset,map<string,vector<unsigned>>& map_sa){
     string qname = getName(aln);
     string chrom = getChrom(aln,bam_header);
     string nchrom = getNchrom(aln,bam_header);
@@ -530,12 +596,21 @@ bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string
     int flag = getFlag(aln);
     int mapQ = getMapq(aln);
     int isize = getIsize(aln);
+    pair<unsigned,string> p_sa = make_pair(0,"");
+    if(flag & 2048) {
+        string sa = getAux(aln,"SA");
+        vector<string> v_sa = split(sa,",");
+        vector<string> v_sa_1 = split(v_sa[0],":");
+        unsigned sa_pos = position2int(v_sa_1[2],string2number<int>(v_sa[1]),map_chrom_offset);
+        p_sa = make_pair(sa_pos,v_sa[3]);
+        //cout << "Get SA: " << pos << "\t" << sa << "\t" <<v_sa_1[2] <<":"<< v_sa[1] << "\n";
+    }
 
     // cout << qname << "\t" << cigar << "\t" << chrom << ":" << pos <<"\t" << nchrom <<":" << npos << "\n";
 
     if(s_chroms.find(chrom) == s_chroms.end()) return false;
     if(mapQ < 15 || flag & 1024 ) return true;
-    else if(parse_split_read(chrom,pos,seq,cigar,qname,map_split_read, map_alt_split,map_transcript)) {
+    else if(parse_split_read(chrom,pos,seq,cigar,qname,map_split_read, map_alt_split,map_transcript,p_sa,map_sa)) {
         // cout << "Deal split-reads: " << qname << "\t" << cigar << "\t" << isize << "\t" << chrom << ":" << pos << "\n";
         return true;
     }
@@ -552,12 +627,11 @@ bool deal_aln(const bam1_t* aln,const bam_hdr_t* bam_header,unordered_map<string
 //void combine_split_reads(string& break_p1,pair<string,int>& break_p2,int num,map<string,fusion>& map_fusion, map<string,int>& map_c2i);
 //mapping soft-clip seq 到新的断裂点，并将信息记录到散列表 map_fusion 中；
 //@rna: rna 的比对和DNA 不一致
-void map_split_reads(string& break_p1,Piled_reads& prd,unordered_map<unsigned int,vector<unsigned>>& map_kmer_pos,fastqReader& reference,map<string,unsigned>& map_chrom_offset,vector<string> v_chroms,map<string,fusion>& map_fusion,bool rna){
-    cout << "Mapping: " << break_p1 << "\t" << prd.seq << "\n";
-    pair<position,int> result = map_soft_clip_seq(break_p1,map_kmer_pos,reference,prd.seq,prd.match_seq,map_chrom_offset,v_chroms,prd.down,rna);
+void map_split_reads(string& break_p1,Piled_reads& prd,unordered_map<unsigned int,vector<unsigned>>& map_kmer_pos,fastqReader& reference,map<string,unsigned>& map_chrom_offset,vector<string> v_chroms,map<string,fusion>& map_fusion,map<string,vector<unsigned>>& map_sa ,bool rna){
+    pair<position,int> result = map_soft_clip_seq(break_p1,map_kmer_pos,reference,prd.seq,prd.match_seq,map_chrom_offset,v_chroms,map_sa,prd.down,rna);
     cout << "first Map " << break_p1 << "\t" << result.first.first << ":" << result.first.second << "\n";
     if(result.second == -1) return;
-    combine_split_reads(break_p1,result,prd,map_fusion,map_c2i);
+    combine_split_reads(break_p1,result,prd,map_fusion,map_c2i);  
 }
 
 //二分法寻找断裂点距离最近的外显子的位置。
@@ -799,6 +873,9 @@ void combine_rna_fus(vector<pair<fusion,bool>>& vmf,int dis){
         if(vmf[i].second) continue;
         cout << "Combine: " << vmf[i].first.p1.first << ":" << vmf[i].first.p1.second << "-" << vmf[i].first.p2.first << ":"
             <<vmf[i].first.p2.second << "\t";
+        int s_max = vmf[i].first.p1n + vmf[i].first.p2n;
+        auto p1 = vmf[i].first.p1;
+        auto p2 = vmf[i].first.p2;
         for(unsigned j = i+ 1;j < vmf.size();j++){
             if(vmf[i].first.p2.first == vmf[j].first.p2.first && abs(vmf[i].first.p2.second - vmf[j].first.p2.second) <= dis && abs(vmf[i].first.p1.second - vmf[j].first.p1.second) <= dis){
                 vmf[i].first.p1n += vmf[j].first.p1n;
@@ -812,10 +889,18 @@ void combine_rna_fus(vector<pair<fusion,bool>>& vmf,int dis){
                 vmf[j].second = true;
                 cout << vmf[j].first.p1.first << ":" << vmf[j].first.p1.second << "-" << vmf[j].first.p2.first << ":"
                     <<vmf[j].first.p2.second << "\t";
+                int s_tmp = vmf[j].first.p1n + vmf[j].first.p2n;
+                if(s_tmp > s_max) {
+                    p1 = vmf[j].first.p1; //记录是附近最多split-reads 支持的点位；
+                    p2 = vmf[j].first.p2;
+                    s_max = s_tmp;
+                }
             }
         }
         cout << "\n";
         auto& f = vmf[i].first;
+        f.p1 = p1;
+        f.p2 = p2;
         // cout<< f.p1.first <<":" <<f.p1.second << "\t" << f.p2.first<<":"<<f.p2.second << "\t" << f.p1n << ":"<<f.p2n<<":" << f.dcp  << "\n";
         if (min(f.p1n,f.p2n) >= 1)
         {
@@ -927,16 +1012,16 @@ int main(int argc,char* argv[]){
     unordered_map<string,vector<Piled_reads>> map_split_read;
     map<string,fusion> map_fusion;
     unordered_map<string,Extron> mge;
-
+    map<string,vector<unsigned>> map_sa; // 记录supplementary alignment的mapping位置
     //获得外显子、基因信息
     map<string,vector<string>> m_extron = getExtronInfo(extronFile,mge);
     // 获得要进行可变剪切检测的相关转录本信息
     unordered_map<string,string> map_transcript = getTranscript(transFile);
 
     cout << "开始获取融合支持reads ...\n";
-    // 寻找要处理的reads
+    // 寻找要处理的reads map<string,unsigned>& map_chrom_offset,map<string,vector<unsigned>>& map_sa
     while(brd.next()){
-        if (!deal_aln(brd.aln,brd.bam_header,map_dcp,map_split_read,map_alt_split,map_transcript)) break;       
+        if (!deal_aln(brd.aln,brd.bam_header,map_dcp,map_split_read,map_alt_split,map_transcript,map_chrom_offset,map_sa)) break;       
     }
     cout << "融合支持reads获取结束！\n";
 
@@ -955,7 +1040,7 @@ int main(int argc,char* argv[]){
         for(auto& fu:sr.second){
             string break_p1 = sr.first;
             cout << "FF: " << break_p1 << "\t" <<fu.seq << "\t" << fu.count << "\t" << fu.down << "\n";
-            map_split_reads(break_p1,fu,map_kmer_pos,reference,map_chrom_offset,v_chroms,map_fusion,rna);
+            map_split_reads(break_p1,fu,map_kmer_pos,reference,map_chrom_offset,v_chroms,map_fusion,map_sa,rna);
         }
     }
 

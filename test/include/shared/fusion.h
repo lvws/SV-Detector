@@ -52,13 +52,16 @@ string hanming(const string& s1,const string& s2,int td=2);
 //@m: reads 上和 参考基因组match 的序列（10bp）
 //@qname: reads 的 name;
 //@down: soft-clip是否在断裂点下游;
+//@p_sa: 记录supplementary alignment 的绝对位置和 cigar 
+//@map_sa: 记录first alignment --> supplementary alignment的映射
 //return 更新堆叠序列集合。
 // void pileup(vector<Piled_reads>& v_ss,string& s,string& m,string qname,bool down);
 
 //处理split-read, 对一断点的soft-clip seq 进行堆叠；
 //该function 会修改 map_split_read 的内容，
 //map_split_read : key 为 chrom<string>:pos<int> ; value 为 Piled_reads 向量。
-bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript );
+bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript,
+pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa);
 
 //融合断点结构,记录两个断点的位置。
 //自动会把较低的染色体位点记录为p1, 较高的位点记录为p2；
