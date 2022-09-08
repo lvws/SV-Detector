@@ -54,6 +54,7 @@ map<string,unsigned> make_chrom_offset(const string& fasta){
     {
         map_chrom_offset[chrom] = offset;
     }
+    map_chrom_offset["GL000228.1"] = map_chrom_offset["MT"];
     return map_chrom_offset;
 }
 
@@ -64,7 +65,7 @@ unordered_map<unsigned int,vector<unsigned>> make_index(const string& fasta,int 
     unordered_map<unsigned int,vector<unsigned>> map_kmer;
     map<string,uint8_t> chrom_map = {{"1",1},{"2",2},{"3",3},{"4",4},{"5",5},{"6",6},{"7",7},{"8",8},
     {"9",9},{"10",10},{"11",11},{"12",12},{"13",13},{"14",14},{"15",15},{"16",16},{"17",17},{"18",18},
-    {"19",19},{"20",20},{"21",21},{"22",22},{"X",23},{"Y",24}};
+    {"19",19},{"20",20},{"21",21},{"22",22},{"X",23},{"Y",24},{"GL000228.1",25}};
     // map<string,uint8_t> chrom_map = {{"Y",24}};
     fastqReader reference = fastqReader(fasta);
     map<string,unsigned> map_chrom_offset = make_chrom_offset(fasta);
@@ -74,6 +75,7 @@ unordered_map<unsigned int,vector<unsigned>> make_index(const string& fasta,int 
     unsigned np = 1 << 25;
     while (fai >> chrom >> length >> offset >> lineBase >> lineByte)
     {
+        //cout << chrom << '\n';
         if(chrom_map.find(chrom) != chrom_map.end()){
             // uint8_t chrom_n = chrom_map[chrom];
             unsigned n = 1;

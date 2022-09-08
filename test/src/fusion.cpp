@@ -45,8 +45,9 @@ string hanming(const string& s1,const string& s2,int td){
 //@m: reads 上和 参考基因组match 的序列（10bp）
 //@qname: reads 的 name;
 //@down: soft-clip是否在断裂点下游;
+//@ptag: 是否为primary alignment
 //return 更新堆叠序列集合。
-void pileup(vector<Piled_reads>& v_ss,string& s,string& m,string& qname,string& cigar,bool down){
+void pileup(vector<Piled_reads>& v_ss,string& s,string& m,string& qname,string& cigar,bool down,bool ptag){
     bool flag = false;
     for(auto& p :v_ss){
         if (p.down != down) continue;        
@@ -54,13 +55,16 @@ void pileup(vector<Piled_reads>& v_ss,string& s,string& m,string& qname,string& 
         if(hs != "") {
             p.seq = hs;
             p.count ++;
+            if (ptag) p.ucount ++; 
             p.qnames.push_back(qname);
             p.cigars.push_back(cigar);
             flag = true ;
         }
     }
     if (flag) return;
-    v_ss.push_back({s,m,1,{qname},{cigar},down});
+    int uc = 0;
+    if (ptag) uc = 1;
+    v_ss.push_back({s,m,1,uc,{qname},{cigar},down});
     return ;
 }
 
@@ -76,7 +80,7 @@ altSplit getCigarInfo(string& cigar){
         switch (c)
         {
         case 'S':
-            asp.slen = a;
+            asp.slen.push_back(a);
             break;
         case 'M':
         case 'D':
@@ -93,26 +97,15 @@ altSplit getCigarInfo(string& cigar){
     return asp;
 }
 
-
-//处理split-read, 对一断点的soft-clip seq 进行堆叠；
-//split-read,最少12bp
-//@chrom: read map 的染色体号；
-//@pos: read map的位置；
-//@seq: read 的序列；
-//@cigar: read 的cigar值；
-//@qname: read 的名字；
-//@map_split_read: 记录每个断点堆叠信息的映射表；
-//@p_sa: 记录supplementary alignment 的绝对位置和 cigar  (int,cigar ; int为0时跳过)
-//@map_sa: 记录first alignment --> supplementary alignment的映射
-//@return:  检查read 是否含soft-clip , 是返回 true ,若满足soft-clip 长度大于等于12 则进一步堆叠信息； 
+ 
 bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,mps& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript,
-pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa ){
+pair<unsigned,string>& p_sa,map<string,vector<pair<unsigned,bool>>>& map_sa,bool ptag ){
     smatch m;
     string split_read,match_seq;
     bool down = false;
     auto asp = getCigarInfo(cigar);
-
-// 找可变剪切
+    if (asp.slen.size() == 0) return false; // 不存在soft-clip reads
+    // 找可变剪切
     //cout << "可变剪切： " << chrom << ":" << pos << "\t" << cigar<<"\t";
     for (auto as : asp.altsp){
         string p1 = chrom + ':' + to_string(as.first + pos);
@@ -124,20 +117,27 @@ pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa ){
     }
     //cout << "\n";
    
+    // 检查soft 若有两个选择最长的, 若只有一个，则检查时在开端还是结尾
+    bool stag = false; // soft 位于开头的标记
+    int n = asp.slen[0];
+    if ( asp.slen.size() > 1){
+        if (asp.slen[0] >= asp.slen[1]) {
+            stag = true;
+        } else n = asp.slen[1];
+    }  else if(cigar[cigar.size()-1] != 'S') stag = true;
+
     //处理reads信息
-    if(cigar[cigar.size()-1] == 'S'){
+    if(!stag){
         // if(!isdigit(cigar[cigar.size()-3])) return false;
         down = true;
         // cout << "Treat Cigar: " << cigar << "\tsoft: " << rs.first << "\toffset: " <<  rs.second << "\n";
         pos += asp.offset ;
-        int n = asp.slen;
         if(n<12) return false;
         split_read = seq.substr(seq.size()-n,n);
         if (seq.size()-10 < n) match_seq = seq.substr(0,seq.size()-n);
         else match_seq = seq.substr(seq.size()-n-10,10);
-        
-    } else {
-        int n = asp.slen;
+    }                
+    else {
         if (n >= 12 ){
             split_read = seq.substr(0,n);
             reverse(split_read.begin(),split_read.end());
@@ -151,18 +151,19 @@ pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa ){
         string f_sa = chrom + ":" + to_string(pos/10);
         if(p_sa.second.back() == 'S'){
             auto asp_sa = getCigarInfo(p_sa.second);
-            map_sa[f_sa].push_back(p_sa.first+asp_sa.offset-1);
+            map_sa[f_sa].push_back(make_pair(p_sa.first+asp_sa.offset-1,false));
         }
-        else map_sa[f_sa].push_back(p_sa.first);
+        else map_sa[f_sa].push_back(make_pair(p_sa.first,true));
         //cout << "SA: " << f_sa << ": " << p_sa.first << "\t" << p_sa.second << "\n"; 
     }
     
     string p = chrom + ":" + to_string(pos); 
+    // cout << "Count Split Reads: " << p << '\t' << qname << "\n";
     for (char c:split_read) {
         if (c == 'N') return true;
     }
 
-    pileup(map_split_read[p],split_read,match_seq,qname,cigar,down);
+    pileup(map_split_read[p],split_read,match_seq,qname,cigar,down,ptag);
     return true;
 }
 
@@ -172,7 +173,7 @@ pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa ){
 void parse_discordant_read(string& qname,int flag,string& rname,int pos,string& nchrom,int npos,string& cigar,unordered_map<string,fusionPos>& map_dcp){
     if(flag & 3328 || map_c2i.find(nchrom) == map_c2i.end()) return;
     auto rs = getCigarInfo(cigar);
-    int pos1 = pos - rs.offset;
+    int pos1 = pos ;
     int pos2 = pos + rs.offset;
 
     if(map_c2i[rname] < map_c2i[nchrom] || (map_c2i[rname] == map_c2i[nchrom] && pos < npos)){
@@ -203,20 +204,8 @@ unordered_map<string,vector<string>> combine_discordant_reads(unordered_map<stri
     return map_fus_dcps;
 }
 
-//整合split read 的break points
-//使用 断点 上游-下游 作为Key 记录 fusion value 。
-//对每一个split read，进行处理。融合结果更新到map_fusion 表中。
-//对于soft-clip seq正向mapping 的 split-read, 设left_side(p1) 点位是，mapping 端在左侧的点位，反之为 right_side(p2);
-//对于soft-clip seq反向互补mapping 的 split-read, 设染色体位点低的为 left-side, 染色体高的为 right-side；
-//@break_p1 : 以 chrom:pos 记录的断点（检索bam 时得到的第一个断裂点）；
-//@map_p2: 以<string(chrom),int(pos)> 记录的断点，是soft-clip reads 重新比对到的位置,以及比对的方式（0，1，2，3）；
-// ==========xxxxxxxx   +(0);
-// ==========xxxxxxxx   -(1);
-// xxxxxxxxxx========   +(2);
-// xxxxxxxxxx========   -(3);
-//@num: 记录了这个断点-soft-clip reads 支持的数量；
-//@map_fusion:  以break_point1-break_point2 为 key, fusion 为值的 散列表；
-//@map_c2i: 染色体号和数字对应表，用于比较断裂点先后；
+
+
 void combine_split_reads(string& break_p1,pair<pair<string,int>,int>& map_p2,Piled_reads& prd,map<string,fusion>& map_fusion, map<string,int>& map_c2i){
     pair<string,int> p1,p2,left_side,right_side;
     pair<char,char> mpdr;
@@ -230,11 +219,11 @@ void combine_split_reads(string& break_p1,pair<pair<string,int>,int>& map_p2,Pil
     if (map_c2i[chrom_b1] > map_c2i[break_p2.first] || (map_c2i[chrom_b1] == map_c2i[break_p2.first] && pos_b1 > break_p2.second)){
         p1 = break_p2;
         p2 = make_pair(chrom_b1,pos_b1);
-        p2n = prd.count;
+        p2n = prd.ucount;
     } else {
         p1 = make_pair(chrom_b1,pos_b1);
         p2 = break_p2;
-        p1n = prd.count;
+        p1n = prd.ucount;
     }
 
     mpdr = make_pair('+','+');
@@ -248,16 +237,16 @@ void combine_split_reads(string& break_p1,pair<pair<string,int>,int>& map_p2,Pil
     } else if (map_p2.second == 0){
         left_side = make_pair(chrom_b1,pos_b1);
         right_side = break_p2;
-        p1n = prd.count;
+        p1n = prd.ucount;
         p2n = 0;
     } else {
         left_side = break_p2;
         right_side = make_pair(chrom_b1,pos_b1);
-        p2n = prd.count;
+        p2n = prd.ucount;
         p1n = 0;
     }
 
-    // cout << break_p1 <<"\t" << break_p2.first <<":" << break_p2.second << "\n";
+    //cout << break_p1 <<"\t" << break_p2.first <<":" << break_p2.second << "\n";
     string fusion_n = left_side.first + ":" + to_string(left_side.second) + "-" + right_side.first + ":" + to_string(right_side.second);
     fusion* fs =  &map_fusion[fusion_n];
     
@@ -270,8 +259,11 @@ void combine_split_reads(string& break_p1,pair<pair<string,int>,int>& map_p2,Pil
     fs->p2n = fs->p2n + p2n;
     fs->mpdr = mpdr;
     fs->rpdr = rpdr;
-    auto &vp = fs->vp ;
-    for(auto s:prd.qnames) vp.push_back(s);
+    
+    if (left_side == break_p2){
+        for(auto s:prd.qnames) fs->vp2.push_back(s);
+    } else for(auto s:prd.qnames) fs->vp1.push_back(s);
+
     // cigars 记录到对应的集合
     if(right_side == break_p2) {
         for(auto s:prd.cigars) fs->p1_cigars.push_back(s);
@@ -280,13 +272,14 @@ void combine_split_reads(string& break_p1,pair<pair<string,int>,int>& map_p2,Pil
         for(auto s:prd.cigars) fs->p2_cigars.push_back(s);
         fs->split_seqs.second = prd.seq;
     }
+    //cout << "Combine split reads: " << fusion_n << "\t" << fs->p1n << ':' << fs->p2n <<'\t'<< fs->vp1.size() << ':' << fs->vp2.size() << '\n';
 }
 
-//根据split read 断点信息，寻找支持的 discordant reads;
-//split read 的 fusion 信息记录在 散列表 map_fusion 中；
+//根据split read 断点信息，寻找支持的 discordant reads;g
 //储备设定在断裂点附近。目前粗略计算在他们附近100bp,都作为支持项；
 void combine_fusion(map<string,fusion>& map_fusion,unordered_map<string,vector<string>> map_fus_dcps,unordered_map<string,fusionPos>& map_dcp){
-    int dis = 2000;
+    int dis1 = 3000; //远距离
+    int dis2 = 20; // 近距离，防止融合位点偏移 
     for(auto& fs:map_fusion){
         string check_point = fs.second.check_point;
         // cout << "Check Point: " << check_point << "\t" << fs.second.p1.first << ":" << fs.second.p1.second << "-"
@@ -296,31 +289,46 @@ void combine_fusion(map<string,fusion>& map_fusion,unordered_map<string,vector<s
             for(string& qname:map_fus_dcps[check_point]){
                 fusionPos tmp_p = map_dcp[qname];
                 // cout << qname << "\t" << tmp_p.p1.first << ":" << tmp_p.p1pos.first << "-" << tmp_p.p1pos.second << "\t"
-                //     << tmp_p.p2.first << ":" << tmp_p.p2pos.first << "-" << tmp_p.p2pos.second ;
+                //      << tmp_p.p2.first << ":" << tmp_p.p2pos.first << "-" << tmp_p.p2pos.second ;
                 auto &sp = fs.second;
+                int check_num = 0;
                 if(tmp_p.p1.first == sp.p1.first && tmp_p.p2.first == sp.p2.first){
-                    if( (abs(tmp_p.p1pos.first - sp.p1.second) < dis || abs(tmp_p.p1pos.second - sp.p1.second) < dis ) && (abs(tmp_p.p2pos.first - sp.p2.second) < dis || abs(tmp_p.p2pos.second - sp.p2.second) < dis))
-                    {
+                    // mapping seq 在下游，soft seq 在上游
+                    if(sp.rpdr.first == 'd' && abs(tmp_p.p1pos.first - sp.p1.second) < dis1 && (tmp_p.p1pos.first + dis2) > sp.p1.second) check_num++;
+                    // mapping seq 在上游，soft seq 在下游
+                    else if (sp.rpdr.first == 'u' && abs(tmp_p.p1pos.second - sp.p1.second) < dis1 && (tmp_p.p1pos.second - dis2) < sp.p1.second ) check_num ++ ;
+
+                    if(sp.rpdr.second == 'd' && abs(tmp_p.p2pos.first - sp.p2.second) < dis1 && (tmp_p.p2pos.first + dis2) > sp.p2.second ) check_num ++ ;
+                    else if(sp.rpdr.second == 'u' && abs(tmp_p.p2pos.second - sp.p2.second) < dis1 && (tmp_p.p2pos.second - dis2) < sp.p2.second) check_num ++;
+
+                    if(check_num == 2){
                         n++;
-                        //cout << "\tOK";
+                        fs.second.vdcp.push_back(qname);
+                        //cout << "\tOK!\n";
+                        continue;
+                    }
+                    check_num = 0; // 防止第二次计算不符合，但积累了数值；
+                }
+                if (tmp_p.p2.first == sp.p1.first && tmp_p.p1.first == sp.p2.first){
+                    // mapping seq 在下游，soft seq 在上游
+                    if(sp.rpdr.first == 'd' && abs(tmp_p.p2pos.first - sp.p1.second) < dis1 && (tmp_p.p2pos.first + dis2) > sp.p1.second) check_num++;
+                    // mapping seq 在上游，soft seq 在下游
+                    else if (sp.rpdr.first == 'u' && abs(tmp_p.p2pos.second - sp.p1.second) < dis1 && (tmp_p.p2pos.second - dis2) < sp.p1.second ) check_num ++ ;
+
+                    if(sp.rpdr.second == 'd' && abs(tmp_p.p1pos.first - sp.p2.second) < dis1 && (tmp_p.p1pos.first + dis2) > sp.p2.second ) check_num ++ ;
+                    else if(sp.rpdr.second == 'u' && abs(tmp_p.p1pos.second - sp.p2.second) < dis1 && (tmp_p.p1pos.second - dis2) < sp.p2.second) check_num ++;
+
+                    if(check_num == 2){
+                        n++;
+                        fs.second.vdcp.push_back(qname);
+                        //cout << "\tOK!\n";
                         continue;
                     }
                 }
-                if (tmp_p.p2.first == sp.p1.first && tmp_p.p1.first == sp.p2.first){
-                    if( (abs(tmp_p.p2pos.first - sp.p1.second) < dis || abs(tmp_p.p2pos.second - sp.p1.second) < dis ) && (abs(tmp_p.p1pos.first - sp.p2.second) < dis || abs(tmp_p.p1pos.second - sp.p2.second) < dis))
-                    {
-                        n++;
-                        //cout <<"\tOK";
-                    }
-                }
-                //cout << "\n";
+                //cout << "\tfail!\n";
             }
             fs.second.dcp = n;
         }
     }
 }
 
-int main(int argc,char* argv[]){
-    cout << "OK\n";
-    return 0;
-}

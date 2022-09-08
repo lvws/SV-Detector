@@ -15,6 +15,7 @@ using namespace std;
 //@seq : 记录最长的soft-clip seq;
 //@match_seq: read soft-clip seq 旁边和参考基因组一至的序列（默认取10bp)
 //@count: 记录堆叠的次数；
+//@ucount: 记录非secondary/ supplymentary read 的数量 
 //@qnames: 记录堆叠的read的名称；
 //@cigars: 记录堆叠的cigar 名称
 //@down： true 表示soft-clip seq 处于下游，反之～。
@@ -23,6 +24,7 @@ struct Piled_reads
     string seq;
     string match_seq;
     int count=0;
+    int ucount = 0 ;
     vector<string> qnames;
     vector<string> cigars;
     bool down = false;
@@ -31,7 +33,7 @@ struct Piled_reads
 using mps = unordered_map<string,vector<Piled_reads>>; // 记录break point 对应的 soft reads 堆叠，和部分 mapping seq.
 
 //map chrom to int
-map<string,int> map_c2i = {{"1",1},{"2",2},{"3",3},{"4",4},{"5",5},{"6",6},{"7",7},{"8",8},
+static map<string,int> map_c2i = {{"1",1},{"2",2},{"3",3},{"4",4},{"5",5},{"6",6},{"7",7},{"8",8},
     {"9",9},{"10",10},{"11",11},{"12",12},{"13",13},{"14",14},{"15",15},{"16",16},{"17",17},{"18",18},
     {"19",19},{"20",20},{"21",21},{"22",22},{"X",23},{"Y",24}};
 
@@ -53,15 +55,14 @@ string hanming(const string& s1,const string& s2,int td=2);
 //@qname: reads 的 name;
 //@down: soft-clip是否在断裂点下游;
 //@p_sa: 记录supplementary alignment 的绝对位置和 cigar 
-//@map_sa: 记录first alignment --> supplementary alignment的映射
-//return 更新堆叠序列集合。
-// void pileup(vector<Piled_reads>& v_ss,string& s,string& m,string qname,bool down);
-
+//@map_sa: 记录first alignment --> supplementary alignment的映射 bool 值记录soft-clip 位置。 false MS; true SM; 
+//@ptag: 记录该read 是否为primary alignment
+//return 检查read 是否含soft-clip , 是返回 true ,若满足soft-clip 长度大于等于12 则进一步堆叠信息；
 //处理split-read, 对一断点的soft-clip seq 进行堆叠；
 //该function 会修改 map_split_read 的内容，
 //map_split_read : key 为 chrom<string>:pos<int> ; value 为 Piled_reads 向量。
 bool parse_split_read(string& chrom,int pos,string& seq,string& cigar,string& qname,unordered_map<string,vector<Piled_reads>>& map_split_read,unordered_map<string,vector<string>>& map_alt_split,unordered_map<string,string>& map_transcript,
-pair<unsigned,string>& p_sa,map<string,vector<unsigned>>& map_sa);
+pair<unsigned,string>& p_sa,map<string,vector<pair<unsigned,bool>>>& map_sa,bool ptag);
 
 //融合断点结构,记录两个断点的位置。
 //自动会把较低的染色体位点记录为p1, 较高的位点记录为p2；
@@ -92,9 +93,11 @@ unordered_map<string,vector<string>> combine_discordant_reads(unordered_map<stri
 //@slen : 记录soft-clip seq 长度；
 //@offset: 记录偏离长度（主要用于soft-clip 在下游的情况）；
 //@alsp: 记录可变剪切的偏移位点；
+
 struct altSplit
 {
-    int slen = 0 ,offset = 0;
+    vector<int> slen ;//存在两端都有soft 的情况，按顺序记录soft 长度；
+    int offset = 0;
     vector<pair<int,int>> altsp;
 };
 
@@ -104,12 +107,14 @@ struct altSplit
 //@p1: 记录上游断点；
 //@p2: 记录下游断点；
 //@check_points 用于在discordant reads 集合中检索合适的支持(按染色体位置大小顺序构造融合名称)；
-//@p1n: 位于上游断点的split reads 数量；
-//@p2n: 位于下游断点的split reads 数量;
+//@p1n: 位于上游断点的Primary Alginment  split reads 数量；
+//@p2n: 位于下游断点的Primary Alginment split reads 数量;
 //@rpdr: 记录match seq  read 处与上游（‘u’）,下游('d');
 //@mpdr: 记录上下游Soft-Clip read 的 map 方向 ‘+’ 正向 ‘-’ 反向；
-//@vp: 断点的split reads name 集合；
+//@vp1: 来自上游基因，断点的split reads name 集合； (由于使用了supplymentary alignment 会有和vp2重合的id）
+//@vp2: 来自下游基因，断点的split reads name 集合；（由于使用了supplymentary alignment 会有和vp1重合的id）
 //@dcp: 支持断点的discordant reads数。
+//@vdcp: 记录支持断点的discordant reads name。
 //@genes: 记录融合的上下游基因。
 //@genedr: 记录基因的转录方向, ‘+’ 正向 ‘-’ 反向, '0' 未找到基因。
 //@split_seqs: 记录soft-clip seqs。
@@ -126,18 +131,27 @@ struct fusion
     string check_point;
     int p1n = 0;
     int p2n = 0;
-    vector<string> vp;
+    vector<string> vp1;
+    vector<string> vp2;
     vector<string> p1_cigars;
     vector<string> p2_cigars;
     int dcp = 0;
+    vector<string> vdcp;
     pair<string,string> genes;
 };
+
 
 //整合split read 的break points
 //使用 断点 上游-下游 作为Key 记录 fusion value 。
 //对每一个split read，进行处理。融合结果更新到map_fusion 表中。
+//对于soft-clip seq正向mapping 的 split-read, 设left_side(p1) 点位是，mapping 端在左侧的点位，反之为 right_side(p2);
+//对于soft-clip seq反向互补mapping 的 split-read, 设染色体位点低的为 left-side, 染色体高的为 right-side；
 //@break_p1 : 以 chrom:pos 记录的断点（检索bam 时得到的第一个断裂点）；
-//@break_p2: 以<string(chrom),int(pos)> 记录的断点，是soft-clip reads 重新比对到的位置；
+//@map_p2: 以<string(chrom),int(pos)> 记录的断点，是soft-clip reads 重新比对到的位置,以及比对的方式（0，1，2，3）；
+// ==========xxxxxxxx   +(0);
+// ==========xxxxxxxx   -(1);
+// xxxxxxxxxx========   +(2);
+// xxxxxxxxxx========   -(3);
 //@num: 记录了这个断点-soft-clip reads 支持的数量；
 //@map_fusion:  以break_point1-break_point2 为 key, fusion 为值的 散列表；
 //@map_c2i: 染色体号和数字对应表，用于比较断裂点先后；

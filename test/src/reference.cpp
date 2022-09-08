@@ -32,12 +32,12 @@ map<string,vector<unsigned>> fastqReader::get_index(string& fasta_name){
         return chunkParser(chunk)
     
 */
-ChunkParse fastqReader::fetch(string chrom,int start,int end)
+string fastqReader::fetch(string chrom,int start,int end)
 {
     unsigned seq_len,offset,line_bases,line_bytes;
     if(end < start){
         char* buffer = new char[0];
-        return ChunkParse(buffer,0);        
+        return "";        
     }
     vector<unsigned> v = index_dic[chrom];   
     seq_len = v[0];
@@ -54,19 +54,16 @@ ChunkParse fastqReader::fetch(string chrom,int start,int end)
 //    cout << start << '%' << line_bases << '=' << pos << '\n';
 //    cout << offset << '+' << lines << '*' << line_bytes << '+' << pos << '=' << shift << '\n';
     chunk_size = chunk_size + (chunk_size+pos-1)/line_bases;
+    if (shift > length) return string(end-start+1,'N');
     fasta.seekg(shift);
     char* buffer = new char[chunk_size];
     fasta.read(buffer,chunk_size);
-    return ChunkParse(buffer,chunk_size);
-}
-
-string ChunkParse::seq()
-{
     string s;
-    for(int i=0;i<length;i++)
+    for(int i=0;i<chunk_size;i++)
     {
-        if(chunk[i] != '\n') s += chunk[i];
+        if(buffer[i] != '\n') s += buffer[i];
     }
+    delete[] buffer;
     return s;
 }
 

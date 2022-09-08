@@ -95,8 +95,6 @@ sv-detector: CMakeFiles/sv-detector.dir/build.make
 sv-detector: libreadfasta_library.so
 sv-detector: libbamread_library.so
 sv-detector: libfusion_library.so
-sv-detector: /dssg02/home/lvws/programs/htslib/lib/libhts.so
-sv-detector: /dssg02/home/lvws/programs/miniconda3/envs/conda_gcc_env/lib/libboost_serialization.so
 sv-detector: CMakeFiles/sv-detector.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable sv-detector"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/sv-detector.dir/link.txt --verbose=$(VERBOSE)

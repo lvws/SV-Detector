@@ -100,10 +100,47 @@ string getAux(const bam1_t *aln,const char tag[2])
     }    
     else 
     {
-        cerr << "no tag :" << tag << '\n';
+        //cerr << "no tag :" << tag << '\n';
         ks_free(&res);
         return "";
     }
     
 }
 
+string getName(const bam1_t *aln)
+{
+    return bam_get_qname(aln);
+}
+
+int getFlag(const bam1_t *aln)
+{
+    return aln->core.flag;
+}
+
+int getPos(const bam1_t *aln)
+{
+    return aln->core.pos;
+}
+
+int getNpos(const bam1_t *aln){
+    return aln->core.mpos;
+}
+
+int getMapq(const bam1_t *aln)
+{
+    return aln->core.qual;
+}
+
+int getIsize(const bam1_t *aln){
+    return aln->core.isize;
+}
+
+string getNchrom(const bam1_t* aln,const bam_hdr_t* bam_header){
+    auto s = sam_hdr_tid2name(bam_header, aln->core.mtid) ;
+    if(s) return s;
+    else return "NA";
+}
+
+string getChrom(const bam1_t* aln,const bam_hdr_t* bam_header){
+    return sam_hdr_tid2name(bam_header, aln->core.tid);
+}

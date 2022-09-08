@@ -1,14 +1,16 @@
 ############################################################
 # Create a library
 ############################################################
-#增加调试信息
+
+
+#增加调试信息  ${PROJECT_SOURCE_DIR}
 add_definitions("-Wall -g")
 
-include_directories("/dssg02/home/lvws/programs/miniconda3/envs/conda_gcc_env//include")
-include_directories("/dssg02/home/lvws/programs/htslib/include")
+include_directories("./boost/include")
+include_directories("./htslib/include")
 
-#Generate the shared library from the library sources
-add_library(readfasta_library SHARED 
+#Generate the SHARED library from the library sources
+add_library(readfasta_library SHARED
     src/reference.cpp
 )
 
@@ -27,17 +29,17 @@ add_library(fusion_library SHARED
 #add_library(bam::library ALIAS bam_library)
 target_include_directories(readfasta_library
     PUBLIC 
-        ${PROJECT_SOURCE_DIR}/include
+        ./include
 )
 
 target_include_directories(bamread_library
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        ./include
 )
 
 target_include_directories(fusion_library
     PUBLIC
-        ${PROJECT_SOURCE_DIR}/include
+        ./include
 )
 
 # target_include_directories(mapping_library
@@ -56,6 +58,12 @@ add_executable(sv-detector
     src/main.cpp
 )
 
+#使用相对路径
+# Find shared libraries next to the executable
+set_target_properties( sv-detector PROPERTIES
+        BUILD_WITH_INSTALL_RPATH FALSE
+        LINK_FLAGS "-Wl,-rpath,$ORIGIN/")
+
 # link the new hello_library target with the hello_binary target
 target_link_libraries( sv-detector
     PRIVATE 
@@ -66,6 +74,6 @@ target_link_libraries( sv-detector
 )
 
 
-target_link_libraries(sv-detector "/dssg02/home/lvws/programs/htslib/lib/libhts.so")
-target_link_libraries(sv-detector "/dssg02/home/lvws/programs/miniconda3/envs/conda_gcc_env/lib/libboost_serialization.so")
+target_link_libraries(sv-detector "libhts.so")
+target_link_libraries(sv-detector "libboost_serialization.so")
 target_link_libraries(sv-detector z)

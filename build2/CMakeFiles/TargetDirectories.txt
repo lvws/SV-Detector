@@ -1,0 +1,6 @@
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles/rebuild_cache.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles/edit_cache.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles/sv-detector.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles/fusion_library.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles/bamread_library.dir
+/dssg/home/lvws/GS-WanShengLv/gscap/Tools/SV-Detector/test/bulid/CMakeFiles/readfasta_library.dir
